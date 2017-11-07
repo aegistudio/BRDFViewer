@@ -1,6 +1,7 @@
 package net.aegistudio.brdfviewer;
 
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.BiConsumer;
@@ -20,9 +21,27 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 	private BRDFSlice brdfSlice = new BRDFSlice();
 	private BRDFRenderer brdfPlane = new BRDFRenderer(new BRDFPlaneRender());
 	private BRDFPerspective[] brdfPerspectives = { brdfSlice, brdfPlane };
-	private JProgressBar brdfLoadProgress = new JProgressBar();
-	private JTextField brdfFileName = new JTextField("(None)");
 
+	private JTextField brdfFileName = new JTextField("(None)");
+	private String brdfProgressAction = null;
+	private JProgressBar brdfLoadProgress = new JProgressBar() {
+		private static final long serialVersionUID = 1L;
+
+		public void paint(Graphics g) {
+			super.paint(g);
+			synchronized(BRDFViewer.this) {
+				if(brdfProgressAction != null) {
+					g.setColor(Color.BLACK);
+					Rectangle2D border = g.getFontMetrics()
+							.getStringBounds(brdfProgressAction, g);
+					g.drawString(brdfProgressAction, 
+							(int)((getWidth() - border.getWidth()) * 0.5), 
+							(int)((getHeight() + border.getHeight()) * 0.5));
+				}
+			}
+		}
+	};
+	
 	public BRDFViewer(String title) {
 		super(title);
 		for(BRDFPerspective brdfPerspective : brdfPerspectives) 
@@ -130,29 +149,34 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 			perspective.updateAngle(thiz, thetaHalf, thetaDiff, phiDiff);
 	}
 
-	private final Object modalWorkLock = new Object();
 	@Override
 	public void detachModalWork(BRDFPerspective thiz, String tips,
 			Consumer<BiConsumer<Integer, Integer>> progressNotifierCallback) {
 		
-		synchronized(modalWorkLock) {}
+		//synchronized(modalWorkLock) {}
 		// Turn the UI into modal state before the work.
 		this.setEnabled(false);
 		
 		new Thread(() -> {
-			synchronized(modalWorkLock) {
+			synchronized(BRDFViewer.this) {
+				brdfProgressAction = tips;
+			}
+			
+			//synchronized(modalWorkLock) {
 				try {
 					progressNotifierCallback.accept(this::notifyLoad);
 				}
 				catch(Exception e) {
 					e.printStackTrace();
 				}
-			}
+			//}
 			
 			// Reset modal state after the work.
+			synchronized(BRDFViewer.this) {
+				brdfProgressAction = null;
+			}
 			BRDFViewer.this.setEnabled(true);
 			BRDFViewer.this.repaint();
-
 		}).start();
 	}
 

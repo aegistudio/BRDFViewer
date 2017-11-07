@@ -16,7 +16,7 @@ import net.aegistudio.brdfviewer.BRDFRender.BRDFFragment;
 
 public class BRDFRenderer extends JPanel implements BRDFPerspective {
 	private static final long serialVersionUID = 1L;
-	
+
 	private final BRDFRender render;
 	private BRDFRender.BRDFFragment[][] renderFragments;
 	private BufferedImage renderImage;
@@ -82,7 +82,8 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 					previousLightX = lightX;
 					previousLightY = lightY;
 					previousLightZ = lightZ;
-					render.renderDirectional(viewportX, viewportY, 
+					render.renderDirectional(false,
+							viewportX, viewportY, 
 							renderFragments, previousLightX, 
 							previousLightY, previousLightZ);
 					

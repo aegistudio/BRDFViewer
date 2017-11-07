@@ -17,9 +17,9 @@ public interface BRDFRender {
 		public double thetaHalf, thetaDiff, phiDiff;
 	}
 	
-	public void renderDirectional(
+	public void renderDirectional(boolean symmetricPhi,
 			int viewportWidth, int viewportHeight,
-			BRDFFragment[][] viewportFragments,
+			BRDFFragment[][] viewportFragments, 
 			double lightX, double lightY, double lightZ);
 	
 	public static double length(double[] vector) {

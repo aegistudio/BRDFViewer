@@ -82,30 +82,54 @@ public class BRDFData {
 		thetaHalfRatio = Math.sqrt(thetaHalfRatio);
 		
 		// Fetch data from sample.
-		//int thetaHalfIndex = (int)(dimThetaHalf * thetaHalfRatio);
-		//int thetaDiffIndex = (int)(dimThetaDiff * thetaDiffRatio);
-		//int phiDiffIndex = (int)(dimPhiDiff * phiDiffRatio);
 		double thetaHalfIndex = (dimThetaHalf * thetaHalfRatio);
-//		double thetaDiffIndex = dimThetaDiff - (dimThetaDiff * thetaDiffRatio) - 1.0;
 		double thetaDiffIndex = (dimThetaDiff * thetaDiffRatio);
 		double phiDiffIndex = (dimPhiDiff * phiDiffRatio);
 		
-		// Calculate the in-band offset.
-		//int offset = thetaHalfIndex * dimThetaDiff * dimPhiDiff +
-		//		thetaDiffIndex * dimPhiDiff + phiDiffIndex;
+		// calculate the relative ratio for interpolating.
+		double thetaHalf1 = thetaHalfIndex - Math.floor(thetaHalfIndex);
+		double thetaHalf0 = 1.0 - thetaHalf1;
+
+		double thetaDiff1 = thetaDiffIndex - Math.floor(thetaDiffIndex);
+		double thetaDiff0 = 1.0 - thetaDiff1;
 		
-		// Copy the color to the result.
+		double phiDiff1 = phiDiffIndex - Math.floor(phiDiffIndex);
+		double phiDiff0 = 1.0 - phiDiff1;
+		
+		// Lower 4 points of interpolation cube.
 		color.x = color.y = color.z = 0.0;
-		fetchSample(0.25, Math.floor(thetaHalfIndex), 
+		fetchSample(thetaHalf0 * thetaDiff0 * phiDiff0, 
+				Math.floor(thetaHalfIndex), 
 				Math.floor(thetaDiffIndex), 
 				Math.floor(phiDiffIndex), color);
-		fetchSample(0.25, Math.floor(thetaHalfIndex), 
+		fetchSample(thetaHalf0 * thetaDiff1 * phiDiff0, 
+				Math.floor(thetaHalfIndex), 
 				Math.ceil(thetaDiffIndex), 
 				Math.floor(phiDiffIndex), color);
-		fetchSample(0.25, Math.floor(thetaHalfIndex), 
+		fetchSample(thetaHalf0 * thetaDiff1 * phiDiff1, 
+				Math.floor(thetaHalfIndex), 
 				Math.ceil(thetaDiffIndex), 
 				Math.ceil(phiDiffIndex), color);
-		fetchSample(0.25, Math.floor(thetaHalfIndex), 
+		fetchSample(thetaHalf0 * thetaDiff0 * phiDiff1, 
+				Math.floor(thetaHalfIndex), 
+				Math.floor(thetaDiffIndex), 
+				Math.ceil(phiDiffIndex), color);
+
+		// Upper 4 points of interpolation cube.
+		fetchSample(thetaHalf1 * thetaDiff0 * phiDiff0, 
+				Math.ceil(thetaHalfIndex), 
+				Math.floor(thetaDiffIndex), 
+				Math.floor(phiDiffIndex), color);
+		fetchSample(thetaHalf1 * thetaDiff1 * phiDiff0, 
+				Math.ceil(thetaHalfIndex), 
+				Math.ceil(thetaDiffIndex), 
+				Math.floor(phiDiffIndex), color);
+		fetchSample(thetaHalf1 * thetaDiff1 * phiDiff1, 
+				Math.ceil(thetaHalfIndex), 
+				Math.ceil(thetaDiffIndex), 
+				Math.ceil(phiDiffIndex), color);
+		fetchSample(thetaHalf1 * thetaDiff0 * phiDiff1, 
+				Math.ceil(thetaHalfIndex), 
 				Math.floor(thetaDiffIndex), 
 				Math.ceil(phiDiffIndex), color);
 	}

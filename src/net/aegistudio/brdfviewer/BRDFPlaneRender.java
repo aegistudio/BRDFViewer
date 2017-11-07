@@ -1,14 +1,13 @@
 package net.aegistudio.brdfviewer;
 
 public class BRDFPlaneRender implements BRDFRender {
-	
 	@Override
-	public void renderDirectional(int viewportWidth, int viewportHeight, 
+	public void renderDirectional(boolean symmetricPhi,
+			int viewportWidth, int viewportHeight, 
 			BRDFFragment[][] viewportFragments,
 			double lightX, double lightY, double lightZ) {
 		
 		int viewportStride = Math.min(viewportWidth, viewportHeight);
-		
 		for(int i = 0; i < viewportWidth; ++ i)
 			for(int j = 0; j < viewportHeight; ++ j) {
 				BRDFFragment current = viewportFragments[i][j];
@@ -58,12 +57,14 @@ public class BRDFPlaneRender implements BRDFRender {
 					projHalfY.cross(projHalfX, current.half);
 					projHalfY.normalize();
 					
-					current.phiDiff = Math.acos(
-							projHalfX.dot(projLight));
+					if(symmetricPhi) current.phiDiff = Math.acos(Math.min(
+							Math.max(projHalfX.dot(projLight), 0.0), 1.0));
+					else current.phiDiff = Math.atan2(
+							projHalfY.dot(projLight), projHalfX.dot(projLight));
 					
 					if(current.phiDiff < 0.0) 
 						current.phiDiff += Math.PI;
-					if(current.phiDiff > Math.PI) 
+					if(current.phiDiff >= Math.PI) 
 						current.phiDiff -= Math.PI;
 				}
 			}
