@@ -48,8 +48,9 @@ public class BRDFData {
 			return result;
 		}
 	}
-	public void fetchSample(double ratio, double thetaHalfValue, 
-			double thetaDiffValue, double phiDiffValue, double[] color) {
+	
+	private void fetchSample(double ratio, double thetaHalfValue, 
+			double thetaDiffValue, double phiDiffValue, BRDFVector3d color) {
 		
 		thetaHalfValue = Math.max(0, Math.min(thetaHalfValue, dimThetaHalf - 1));
 		thetaDiffValue = Math.max(0, Math.min(thetaDiffValue, dimThetaDiff - 1));
@@ -66,13 +67,13 @@ public class BRDFData {
 		if(sample1 < 0.0) sample1 = Double.NaN;
 		if(sample2 < 0.0) sample2 = Double.NaN;
 		
-		color[0] += ratio * sample0;
-		color[1] += ratio * sample1;
-		color[2] += ratio * sample2;
+		color.x += ratio * sample0;
+		color.y += ratio * sample1;
+		color.z += ratio * sample2;
 	}
 	
 	public void fetch(double thetaHalf, double thetaDiff, 
-			double phiDiff, double[] color) {
+			double phiDiff, BRDFVector3d color) {
 		
 		// Calculate ratio.
 		double thetaHalfRatio = thetaHalf / (Math.PI * 0.5);
@@ -85,7 +86,8 @@ public class BRDFData {
 		//int thetaDiffIndex = (int)(dimThetaDiff * thetaDiffRatio);
 		//int phiDiffIndex = (int)(dimPhiDiff * phiDiffRatio);
 		double thetaHalfIndex = (dimThetaHalf * thetaHalfRatio);
-		double thetaDiffIndex = dimThetaDiff - (dimThetaDiff * thetaDiffRatio) - 1.0;
+//		double thetaDiffIndex = dimThetaDiff - (dimThetaDiff * thetaDiffRatio) - 1.0;
+		double thetaDiffIndex = (dimThetaDiff * thetaDiffRatio);
 		double phiDiffIndex = (dimPhiDiff * phiDiffRatio);
 		
 		// Calculate the in-band offset.
@@ -93,7 +95,7 @@ public class BRDFData {
 		//		thetaDiffIndex * dimPhiDiff + phiDiffIndex;
 		
 		// Copy the color to the result.
-		color[0] = color[1] = color[2] = 0.0;
+		color.x = color.y = color.z = 0.0;
 		fetchSample(0.25, Math.floor(thetaHalfIndex), 
 				Math.floor(thetaDiffIndex), 
 				Math.floor(phiDiffIndex), color);

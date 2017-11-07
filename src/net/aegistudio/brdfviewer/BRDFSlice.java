@@ -33,7 +33,6 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 	private final JCheckBox smoothDisplay 
 		= new JCheckBox("Smooth sample points");
 	
-	private BRDFData data = null;
 	private int granularity = 3;
 	private double thetaHalf = 0.0, 
 			thetaDiff = 0.0, phiDiff = 0.0;
@@ -52,9 +51,9 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 			g.setColor(Color.BLACK);
 			g.fillRect(0, 0, getWidth(), getHeight());
 			
-			if(data != null) {
+			if(host.getData() != null) {
 				// Render slice data.
-				double[] colorTuple = new double[3];
+				BRDFVector3d colorTuple = new BRDFVector3d();
 
 				boolean causedByNewImage = false;
 				if(	sliceImage == null
@@ -86,10 +85,7 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 								for(int j = 0; j < getYSpan() * granularity; ++ j) {
 									fetchTuple(i * granularityStride, 
 											j * granularityStride, colorTuple);
-									sliceImage.setRGB(i, j, 
-											   ((int)(colorTuple[2] * 255) & 0x0ff)
-											+ (((int)(colorTuple[1] * 255) & 0x0ff) << 8)
-											+ (((int)(colorTuple[0] * 255) & 0x0ff) << 16));;
+									sliceImage.setRGB(i, j, colorTuple.asRGB());
 								}
 								progress.accept(i, getXSpan());
 							}
@@ -103,8 +99,8 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 							for(int j = 0; j < getYSpan(); ++ j) {
 								fetchTuple(i, j, colorTuple);
 								
-								Color dataColor = new Color((float)colorTuple[0], 
-										(float)colorTuple[1], (float)colorTuple[2]);
+								Color dataColor = new Color((float)colorTuple.x, 
+										(float)colorTuple.y, (float)colorTuple.z);
 								ig.setColor(dataColor);
 								ig.fillRect(i * granularity, j * granularity, 
 										granularity, granularity);
@@ -150,7 +146,7 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 		}
 		
 		private void onMouseEvent(MouseEvent me) {
-			if(data == null) return;
+			if(host.getData() == null) return;
 			int x = Math.max(0, Math.min(me.getX(), 
 					granularity * getXSpan() - 1));
 			int y = Math.max(0, Math.min(me.getY(), 
@@ -327,21 +323,22 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 		// Select the slice mode.
 		thetaHalfSliceLabel.setSelected(true);
 		switchSliceMode(SLICEMODE_THETAHALF);
-		updateAngle(0, 0, Math.PI * 0.5);
+		updateAngle(this, 0, 0, Math.PI * 0.5);
 	}
 	
 	private int getXSpan() {
 		return sliceMode == SLICEMODE_PHIDIFF?
-				data.dimThetaDiff : data.dimPhiDiff;
+				host.getData().dimThetaDiff : host.getData().dimPhiDiff;
 	}
 	
 	private int getYSpan() {
 		return sliceMode == SLICEMODE_THETAHALF?
-				data.dimThetaDiff : data.dimThetaHalf;
+				host.getData().dimThetaDiff : host.getData().dimThetaHalf;
 	}
 	
 	private Dimension recalculate() {
-		if(data == null) return null;
+		if(host == null) return null;
+		if(host.getData() == null) return null;
 		
 		return new Dimension(
 				granularity * getXSpan(), 
@@ -359,7 +356,6 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 
 	@Override
 	public void updateData(BRDFData data) {
-		this.data = data;
 		this.sliceImage = null;
 		
 		this.strideThetaHalf = 0.5 * Math.PI / data.dimThetaHalf;
@@ -394,8 +390,9 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 	}
 
 	@Override
-	public void updateAngle(double thetaHalf, 
-			double thetaDiff, double phiDiff) {
+	public void updateAngle(BRDFPerspective perspective,
+			double thetaHalf, double thetaDiff, double phiDiff) {
+		
 		this.thetaHalfField.setValue(
 				this.thetaHalf = thetaHalf);
 		this.thetaDiffField.setValue(
@@ -410,12 +407,12 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 		super.repaint();
 		if(initializedObject == null) return;
 		
-		if(data != null) {
-			double[] sample = new double[3];
-			data.fetch(thetaHalf, thetaDiff, phiDiff, sample);
-			redSample.setText(String.format("%.3f", sample[0]));
-			greenSample.setText(String.format("%.3f", sample[1]));
-			blueSample.setText(String.format("%.3f", sample[2]));
+		if(host != null && host.getData() != null) {
+			BRDFVector3d sample = new BRDFVector3d();
+			host.getData().fetch(thetaHalf, thetaDiff, phiDiff, sample);
+			redSample.setText(String.format("%.3f", sample.x));
+			greenSample.setText(String.format("%.3f", sample.y));
+			blueSample.setText(String.format("%.3f", sample.z));
 		}
 		else {
 			redSample.setText("");
@@ -430,30 +427,24 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 		this.host = host;
 	}
 	
-	private void fetchTuple(double i, double j, double[] tuple) {
+	private void fetchTuple(double i, double j, BRDFVector3d tuple) {
 		switch(sliceMode) {
 			case SLICEMODE_THETAHALF:
-				data.fetch(thetaHalf, j * strideThetaDiff, 
+				host.getData().fetch(thetaHalf, j * strideThetaDiff, 
 						i * stridePhiDiff, tuple);
 				break;
 				
 			case SLICEMODE_THETADIFF:
-				data.fetch(j * strideThetaHalf, thetaDiff, 
+				host.getData().fetch(j * strideThetaHalf, thetaDiff, 
 						i * stridePhiDiff, tuple);
 				break;
 				
 			case SLICEMODE_PHIDIFF:
-				data.fetch(j * strideThetaHalf, 
+				host.getData().fetch(j * strideThetaHalf, 
 						i * strideThetaDiff, phiDiff, tuple);
 				break;
 		}
-		clamp(tuple);
-	}
-	
-	private void clamp(double[] tuple) {
-		tuple[0] = Math.min(Math.max(0.0, tuple[0]), 1.0);
-		tuple[1] = Math.min(Math.max(0.0, tuple[1]), 1.0);
-		tuple[2] = Math.min(Math.max(0.0, tuple[2]), 1.0);
+		tuple.clamp();
 	}
 	
 	private void notifySliceInput(double xStride, double yStride) {

@@ -6,6 +6,8 @@ import java.util.function.Consumer;
 
 public interface BRDFPerspective {
 	public interface BRDFHost {
+		public BRDFData getData();
+		
 		public void broadcastAngleUpdate(BRDFPerspective thiz, 
 				double thetaHalf, double thetaDiff, double phiDiff);
 		
@@ -15,8 +17,8 @@ public interface BRDFPerspective {
 	
 	public void setHost(BRDFHost host);
 	
-	public void updateAngle(double thetaHalf, 
-			double thetaDiff, double phiDiff);
+	public void updateAngle(BRDFPerspective source,
+			double thetaHalf, double thetaDiff, double phiDiff);
 	
 	public void updateData(BRDFData data);
 	

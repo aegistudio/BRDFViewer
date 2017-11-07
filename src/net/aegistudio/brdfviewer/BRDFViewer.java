@@ -16,16 +16,26 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 	private static final String lookAndFeelID = 
 			"com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 	
-	private BRDFSlice brdfView = new BRDFSlice();
-	private BRDFPerspective[] brdfPerspectives = { brdfView };
+	private BRDFData brdfData = null;
+	private BRDFSlice brdfSlice = new BRDFSlice();
+	private BRDFRenderer brdfPlane = new BRDFRenderer(new BRDFPlaneRender());
+	private BRDFPerspective[] brdfPerspectives = { brdfSlice, brdfPlane };
 	private JProgressBar brdfLoadProgress = new JProgressBar();
 	private JTextField brdfFileName = new JTextField("(None)");
 
 	public BRDFViewer(String title) {
 		super(title);
-		add(brdfView, BorderLayout.CENTER);
-		brdfView.setHost(this);
+		for(BRDFPerspective brdfPerspective : brdfPerspectives) 
+			brdfPerspective.setHost(this);
 		
+		JTabbedPane tabbedPanel = new JTabbedPane();
+		add(tabbedPanel, BorderLayout.CENTER);
+		
+		// Insert the function slice into the tabbed pane.
+		tabbedPanel.add(brdfSlice, "Function Slice");
+		tabbedPanel.add(brdfPlane, "Plane Render");
+		
+		// Insert the lower state pane.
 		JPanel lowerPanel = new JPanel();
 		lowerPanel.setLayout(new BorderLayout());
 		add(lowerPanel, BorderLayout.SOUTH);
@@ -66,10 +76,10 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 					// Perform file loading progress.
 					try {
 						// A MERL-BRDF file is selected.
-						BRDFData newData = BRDFData.open(
-								fileChooser.getSelectedFile(), progress);
+						brdfData = BRDFData.open(fileChooser
+								.getSelectedFile(), progress);
 						for(BRDFPerspective perspective : brdfPerspectives)
-							perspective.updateData(newData);
+							perspective.updateData(brdfData);
 						repaint();
 						
 						String fileName = fileChooser.getSelectedFile().getName();
@@ -106,7 +116,7 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 		
 		BRDFViewer brdfViewer = new BRDFViewer("BRDF Viewer");
 		brdfViewer.setLocationRelativeTo(null);
-		brdfViewer.setSize(new Dimension(830, 480));
+		brdfViewer.setSize(new Dimension(830, 500));
 		brdfViewer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		brdfViewer.setVisible(true);
@@ -117,8 +127,7 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 			double thetaHalf, double thetaDiff, double phiDiff) {
 	
 		for(BRDFPerspective perspective : brdfPerspectives) 
-			if(perspective != thiz) perspective.updateAngle(
-					thetaHalf, thetaDiff, phiDiff);
+			perspective.updateAngle(thiz, thetaHalf, thetaDiff, phiDiff);
 	}
 
 	private final Object modalWorkLock = new Object();
@@ -145,5 +154,10 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 			BRDFViewer.this.repaint();
 
 		}).start();
+	}
+
+	@Override
+	public BRDFData getData() {
+		return this.brdfData;
 	}
 }
