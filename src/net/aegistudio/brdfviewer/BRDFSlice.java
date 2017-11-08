@@ -18,7 +18,6 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
-import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 
 public class BRDFSlice extends JPanel implements BRDFPerspective {
@@ -187,9 +186,8 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 			new JDegreeField(Math.PI, INPUT_SIZE);
 	
 	private Object initializedObject = new Object();
-	private final JTextField redSample = new JTextField(), 
-			greenSample = new JTextField(), 
-			blueSample = new JTextField();
+	private final JColorSampler colorSample 
+		= new JColorSampler(INFOTAG_SIZE, INPUT_SIZE);
 	
 	public BRDFSlice() {
 		this.setLayout(new BorderLayout());
@@ -277,28 +275,7 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 		eastPanel.add(informationPanel, BorderLayout.SOUTH);
 		
 		// Insert the sample boxes.
-		JPanel	redPanel = new JPanel(), 
-				greenPanel = new JPanel(), 
-				bluePanel = new JPanel();
-		JPanel[] samplePanels = { redPanel, greenPanel, bluePanel };
-		
-		JLabel	redLabel = new JLabel("<html>\u03c1<sub>Red</sub></html>"),
-				greenLabel = new JLabel("<html>\u03c1<sub>Green</sub></html>"),
-				blueLabel = new JLabel("<html>\u03c1<sub>Blue</sub></html>");
-		JLabel[] sampleLabels = { redLabel, greenLabel, blueLabel };
-		
-		JTextField[] sampleFields = { redSample, greenSample, blueSample };
-		
-		for(int i = 0; i < 3; ++ i) {
-			sampleLabels[i].setPreferredSize(INFOTAG_SIZE);
-			sampleFields[i].setPreferredSize(INPUT_SIZE);
-			sampleLabels[i].setHorizontalAlignment(JLabel.RIGHT);
-			sampleFields[i].setHorizontalAlignment(JTextField.RIGHT);
-			sampleFields[i].setEnabled(false);
-			samplePanels[i].add(sampleLabels[i]);
-			samplePanels[i].add(sampleFields[i]);
-			informationPanel.add(samplePanels[i]);
-		}
+		informationPanel.add(colorSample);
 		
 		// Insert the granularity option.
 		JPanel granularity = new JPanel();
@@ -407,18 +384,12 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 		super.repaint();
 		if(initializedObject == null) return;
 		
+		BRDFVector3d sample = null;
 		if(host != null && host.getData() != null) {
-			BRDFVector3d sample = new BRDFVector3d();
+			sample = new BRDFVector3d();
 			host.getData().fetch(thetaHalf, thetaDiff, phiDiff, sample);
-			redSample.setText(String.format("%.3f", sample.x));
-			greenSample.setText(String.format("%.3f", sample.y));
-			blueSample.setText(String.format("%.3f", sample.z));
 		}
-		else {
-			redSample.setText("");
-			greenSample.setText("");
-			blueSample.setText("");
-		}
+		colorSample.setColorSample(sample);
 	}
 
 	private BRDFHost host;

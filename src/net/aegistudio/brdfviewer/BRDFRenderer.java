@@ -1,8 +1,10 @@
 package net.aegistudio.brdfviewer;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -23,9 +25,10 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 	
 	private int viewportX = 512, viewportY = 512;
 	private double lightX = 0.0, lightY = 0.0, lightZ = 1.0;
+	private double cursorX = 0.5, cursorY = 0.5;
 	
-//	private static final Dimension INFOTAG_SIZE = new Dimension(80, 25);
-//	private static final Dimension INPUT_SIZE = new Dimension(120, 25);
+	private static final Dimension INFOTAG_SIZE = new Dimension(80, 25);
+	private static final Dimension INPUT_SIZE = new Dimension(120, 25);
 	
 	private final JComponent brdfComponent = new JComponent() {
 		private static final long serialVersionUID = 1L;
@@ -103,10 +106,77 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 						notifier.accept(i, viewportX);
 					}
 					notifier.accept(1, 1);
+					informationUpdate();
 				});
 			}
 			
 			if(renderImage != null) g.drawImage(renderImage, 0, 0, null);
+			
+			// Render the origin lengend.
+			int originNearPos = 1, originFarPos = 8;
+			int originNearMin = 3, originFarMin = 10;
+			int originCenterX = (int)(viewportX * 0.5);
+			int originCenterY = (int)(viewportY * 0.5);
+			g.setColor(Color.green);
+			g.drawLine(originCenterX + originNearPos, originCenterY + originNearPos, 
+					originCenterX + originNearPos, originCenterY + originFarPos);
+			g.drawLine(originCenterX - originNearMin, originCenterY + originNearPos, 
+					originCenterX - originNearMin, originCenterY + originFarPos);
+			g.drawLine(originCenterX + originNearPos, originCenterY - originNearMin, 
+					originCenterX + originNearPos, originCenterY - originFarMin);
+			g.drawLine(originCenterX - originNearMin, originCenterY - originNearMin, 
+					originCenterX - originNearMin, originCenterY - originFarMin);
+			
+			g.drawLine(originCenterX + originNearPos, originCenterY + originNearPos, 
+					originCenterX + originFarPos, originCenterY + originNearPos);
+			g.drawLine(originCenterX - originNearMin, originCenterY + originNearPos, 
+					originCenterX - originFarMin, originCenterY + originNearPos);
+			g.drawLine(originCenterX + originNearPos, originCenterY - originNearMin, 
+					originCenterX + originFarPos, originCenterY - originNearMin);
+			g.drawLine(originCenterX - originNearMin, originCenterY - originNearMin, 
+					originCenterX - originFarMin, originCenterY - originNearMin);
+			
+			// Render the light direction legend.
+			int lightNear = 5, lightFar = 10;
+			int lightIncNear = 3, lightIncFar = 7;
+			float viewportMin = Math.min(viewportX - 1, viewportY - 1);
+			int lightCenterX = (int)(viewportMin * (0.5 + lightX));
+			int lightCenterY = (int)(viewportMin * (0.5 + lightY));
+			g.setColor(Color.green);
+			g.fillRect(lightCenterX - 1, lightCenterY - 1, 3, 3);
+			g.drawLine(lightCenterX + lightNear, lightCenterY, 
+					lightCenterX + lightFar, lightCenterY);
+			g.drawLine(lightCenterX - lightNear, lightCenterY, 
+					lightCenterX - lightFar, lightCenterY);
+			g.drawLine(lightCenterX, lightCenterY + lightNear, 
+					lightCenterX, lightCenterY + lightFar);
+			g.drawLine(lightCenterX, lightCenterY - lightNear, 
+					lightCenterX, lightCenterY - lightFar);
+			
+			g.drawLine(lightCenterX + lightIncNear, lightCenterY + lightIncNear, 
+					lightCenterX + lightIncFar, lightCenterY + lightIncFar);
+			g.drawLine(lightCenterX + lightIncNear, lightCenterY - lightIncNear, 
+					lightCenterX + lightIncFar, lightCenterY - lightIncFar);
+			g.drawLine(lightCenterX - lightIncNear, lightCenterY + lightIncNear, 
+					lightCenterX - lightIncFar, lightCenterY + lightIncFar);
+			g.drawLine(lightCenterX - lightIncNear, lightCenterY - lightIncNear, 
+					lightCenterX - lightIncFar, lightCenterY - lightIncFar);
+			
+			// Render the picking cursor legend.
+			int cursorNear = 5, cursorFar = 10;
+			int cursorCenterX = (int)(cursorX * (viewportX - 1));
+			int cursorCenterY = (int)(cursorY * (viewportY - 1));
+			
+			g.setColor(Color.green);
+			g.drawLine(cursorCenterX + cursorNear, cursorCenterY + 0, 
+					cursorCenterX + cursorFar, cursorCenterY + 0);
+			g.drawLine(cursorCenterX - cursorNear, cursorCenterY + 0, 
+					cursorCenterX - cursorFar, cursorCenterY + 0);
+			g.drawLine(cursorCenterX + 0, cursorCenterY + cursorNear, 
+					cursorCenterX + 0, cursorCenterY + cursorFar);
+			g.drawLine(cursorCenterX + 0, cursorCenterY - cursorNear, 
+					cursorCenterX + 0, cursorCenterY - cursorFar);
+			
 		}
 		
 		private void handleMouse(MouseEvent me) {
@@ -116,6 +186,8 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 				// Left mouse button.
 				selectSample(cursorX, cursorY, 
 						renderFragments[cursorX][cursorY]);
+				BRDFRenderer.this.cursorX = 1.0 * cursorX / (viewportX - 1);
+				BRDFRenderer.this.cursorY = 1.0 * cursorY / (viewportY - 1);
 			}
 			else {
 				// Update light position.
@@ -123,12 +195,15 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 						viewportX - 1, viewportY - 1);
 				lightX = (cursorX - viewportX / 2) / minViewport;
 				lightY = (cursorY - viewportY / 2) / minViewport;
-				repaint();
 			}
+			repaint();
 		}
 	};
 	
 	private final JScrollPane componentScroll;
+	private Object initializedObject = new Object();
+	private final JColorSampler colorSampler = 
+			new JColorSampler(INFOTAG_SIZE, INPUT_SIZE);
 	
 	public BRDFRenderer(BRDFRender render) {
 		this.render = render;
@@ -142,11 +217,23 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 		eastPanel.setLayout(new BorderLayout());
 		this.add(eastPanel, BorderLayout.EAST);
 		
-		// The panel contains the angle inputs.
+		// The panel contains the light source inputs.
 		JPanel slicingPanel = new JPanel();
 		slicingPanel.setPreferredSize(
 				new Dimension(220, 0));
 		eastPanel.add(slicingPanel, BorderLayout.CENTER);
+		
+		// The panel contains the information output and hint inputs.
+		JPanel informationPanel = new JPanel();
+		informationPanel.setPreferredSize(
+				new Dimension(220, 160));
+		FlowLayout informationLayout = new FlowLayout();
+		informationLayout.setVgap(0);
+		informationPanel.setLayout(informationLayout);
+		eastPanel.add(informationPanel, BorderLayout.SOUTH);
+		
+		// Insert the sample boxes.
+		informationPanel.add(colorSampler);
 	}
 	
 	private BRDFHost host;
@@ -166,7 +253,25 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 				new Dimension(viewportX, viewportY));
 		this.renderImage = null;
 		this.componentScroll.updateUI();
+		
+		informationUpdate();
+		
 		repaint();
+	}
+	
+	private void informationUpdate() {
+		if(this.initializedObject != null 
+				&& this.renderFragments != null) {
+			int x = (int)(this.cursorX * (this.viewportX - 1));
+			int y = (int)(this.cursorY * (this.viewportY - 1));
+			
+			BRDFFragment current = this.renderFragments[x][y];
+			
+			BRDFVector3d colorSample = new BRDFVector3d();
+			host.getData().fetch(current.thetaHalf, 
+					current.thetaDiff, current.phiDiff, colorSample);
+			colorSampler.setColorSample(colorSample);
+		}
 	}
 	
 	@Override
@@ -182,5 +287,6 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 	private void selectSample(int x, int y, BRDFFragment sample) {
 		host.broadcastAngleUpdate(this, sample.thetaHalf, 
 				sample.thetaDiff, sample.phiDiff);
+		informationUpdate();
 	}
 }

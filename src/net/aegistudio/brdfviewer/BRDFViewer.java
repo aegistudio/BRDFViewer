@@ -21,6 +21,7 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 	private BRDFSlice brdfSlice = new BRDFSlice();
 	private BRDFRenderer brdfPlane = new BRDFRenderer(new BRDFPlaneRender());
 	private BRDFPerspective[] brdfPerspectives = { brdfSlice, brdfPlane };
+	private File rootDirectory = null;
 
 	private JTextField brdfFileName = new JTextField("(None)");
 	private String brdfProgressAction = null;
@@ -72,6 +73,8 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 		openFile.addActionListener(a -> {
 			// Prepare for new file choosing operation.
 			JFileChooser fileChooser = new JFileChooser();
+			if(rootDirectory != null) fileChooser
+				.setCurrentDirectory(rootDirectory);
 			fileChooser.setFileFilter(new FileFilter() {
 				@Override
 				public boolean accept(File f) {
@@ -92,6 +95,8 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 				fileChooser.getSelectedFile() != null) 
 					this.detachModalWork(null, "Loading file...", progress -> {
 				
+					rootDirectory = fileChooser.getSelectedFile().getParentFile();
+						
 					// Perform file loading progress.
 					try {
 						// A MERL-BRDF file is selected.

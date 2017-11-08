@@ -12,7 +12,7 @@ public class BRDFPlaneRender implements BRDFRender {
 			for(int j = 0; j < viewportHeight; ++ j) {
 				BRDFFragment current = viewportFragments[i][j];
 				current.discarded = false;
-				current.normal.x = current.normal.y = 0.0;
+				current.normal.x = current.normal.y = 0;
 				current.normal.z = 1.0;
 				
 				// Calculate the view direction.
