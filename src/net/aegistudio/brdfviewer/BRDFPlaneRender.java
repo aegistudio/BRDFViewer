@@ -16,8 +16,8 @@ public class BRDFPlaneRender implements BRDFRender {
 				current.normal.z = 1.0;
 				
 				// Calculate the view direction.
-				current.view.x = 1.0 * (i - viewportWidth / 2) / viewportStride;
-				current.view.y = 1.0 * (j - viewportHeight / 2) / viewportStride;
+				current.view.x = 1.0 * (viewportWidth / 2 - i) / viewportStride;
+				current.view.y = 1.0 * (viewportHeight / 2 - j) / viewportStride;
 				current.view.z = 1.0;
 				current.view.normalize();
 				
