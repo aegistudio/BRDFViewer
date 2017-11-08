@@ -10,7 +10,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
@@ -29,6 +31,10 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 	
 	private static final Dimension INFOTAG_SIZE = new Dimension(80, 25);
 	private static final Dimension INPUT_SIZE = new Dimension(120, 25);
+	private static final Dimension CHECKBOX_SIZE = new Dimension(130, 25);
+	private JCheckBox renderLegends = new JCheckBox("Render legends");
+	private JCheckBox symmetricPhiDiff = new JCheckBox(
+			"<html>Symmetric <i>\u03d5</i><sub>d</sub></html>");
 	
 	private final JComponent brdfComponent = new JComponent() {
 		private static final long serialVersionUID = 1L;
@@ -85,7 +91,8 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 					previousLightX = lightX;
 					previousLightY = lightY;
 					previousLightZ = lightZ;
-					render.renderDirectional(false,
+					render.renderDirectional(
+							symmetricPhiDiff.isSelected(),
 							viewportX, viewportY, 
 							renderFragments, previousLightX, 
 							previousLightY, previousLightZ);
@@ -98,6 +105,7 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 									renderFragments[i][j].thetaHalf,
 									renderFragments[i][j].thetaDiff,
 									renderFragments[i][j].phiDiff, colorTuple);
+								
 								colorTuple.clamp();
 								renderImage.setRGB(i, j, colorTuple.asRGB());
 							}
@@ -111,6 +119,8 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 			}
 			
 			if(renderImage != null) g.drawImage(renderImage, 0, 0, null);
+
+			if(!renderLegends.isSelected()) return;
 			
 			// Render the origin lengend.
 			int originNearPos = 1, originFarPos = 8;
@@ -180,6 +190,8 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 		}
 		
 		private void handleMouse(MouseEvent me) {
+			if(host.getData() == null) return;
+			
 			int cursorX = Math.max(0, Math.min(me.getX(), viewportX - 1));
 			int cursorY = Math.max(0, Math.min(me.getY(), viewportY - 1));
 			if(observeState) {
@@ -204,6 +216,12 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 	private Object initializedObject = new Object();
 	private final JColorSampler colorSampler = 
 			new JColorSampler(INFOTAG_SIZE, INPUT_SIZE);
+	private final JLabel thetaHalfSliceLabel, 
+			thetaDiffSliceLabel, phiDiffSliceLabel;
+	private final JDegreeField 
+			thetaHalfField = new JDegreeField(Math.PI / 2, INPUT_SIZE),
+			thetaDiffField = new JDegreeField(Math.PI / 2, INPUT_SIZE),
+			phiDiffField = new JDegreeField(Math.PI, INPUT_SIZE);
 	
 	public BRDFRenderer(BRDFRender render) {
 		this.render = render;
@@ -226,14 +244,65 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 		// The panel contains the information output and hint inputs.
 		JPanel informationPanel = new JPanel();
 		informationPanel.setPreferredSize(
-				new Dimension(220, 160));
+				new Dimension(220, 360));
 		FlowLayout informationLayout = new FlowLayout();
 		informationLayout.setVgap(0);
 		informationPanel.setLayout(informationLayout);
 		eastPanel.add(informationPanel, BorderLayout.SOUTH);
 		
+		// Insert the theta-half slice option.
+		JPanel thetaHalfSlicing = new JPanel();
+		informationPanel.add(thetaHalfSlicing);
+		thetaHalfField.setEnabled(false);
+		
+		thetaHalfSliceLabel = new JLabel(
+				"<html><i>\u03b8</i><sub>h</sub></html>");
+		thetaHalfSliceLabel.setHorizontalAlignment(JLabel.RIGHT);
+		thetaHalfSliceLabel.setPreferredSize(INFOTAG_SIZE);
+		thetaHalfSlicing.add(thetaHalfSliceLabel);
+		thetaHalfSlicing.add(thetaHalfField);
+		
+		// Insert the theta-diff slice option.
+		JPanel thetaDiffSlicing = new JPanel();
+		informationPanel.add(thetaDiffSlicing);
+		thetaDiffField.setEnabled(false);
+		
+		thetaDiffSliceLabel = new JLabel(
+				"<html><i>\u03b8</i><sub>d</sub></html>");
+		thetaDiffSliceLabel.setHorizontalAlignment(JLabel.RIGHT);
+		thetaDiffSliceLabel.setPreferredSize(INFOTAG_SIZE);
+		thetaDiffSlicing.add(thetaDiffSliceLabel);
+		thetaDiffSlicing.add(thetaDiffField);
+		
+		// Insert the phi-diff slice option.
+		JPanel phiDiffSlicing = new JPanel();
+		informationPanel.add(phiDiffSlicing);
+		phiDiffField.setEnabled(false);
+		
+		phiDiffSliceLabel = new JLabel(
+				"<html><i>\u03d5</i><sub>d</sub></html>");
+		phiDiffSliceLabel.setHorizontalAlignment(JLabel.RIGHT);
+		phiDiffSliceLabel.setPreferredSize(INFOTAG_SIZE);
+		phiDiffSlicing.add(phiDiffSliceLabel);
+		phiDiffSlicing.add(phiDiffField);
+		
 		// Insert the sample boxes.
 		informationPanel.add(colorSampler);
+		
+		// Insert the sampler options.
+		renderLegends.setHorizontalTextPosition(JCheckBox.RIGHT);
+		renderLegends.setSelected(true);
+		renderLegends.addActionListener(a -> repaint());
+		renderLegends.setPreferredSize(CHECKBOX_SIZE);
+		informationPanel.add(renderLegends);
+		
+		symmetricPhiDiff.setHorizontalTextPosition(JCheckBox.RIGHT);
+		symmetricPhiDiff.setSelected(false);
+		symmetricPhiDiff.setPreferredSize(CHECKBOX_SIZE);
+		symmetricPhiDiff.addActionListener(a -> forceUpdate());
+		informationPanel.add(symmetricPhiDiff);
+		
+		informationUpdate();
 	}
 	
 	private BRDFHost host;
@@ -260,17 +329,34 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 	}
 	
 	private void informationUpdate() {
+		BRDFFragment current = null;
 		if(this.initializedObject != null 
 				&& this.renderFragments != null) {
 			int x = (int)(this.cursorX * (this.viewportX - 1));
 			int y = (int)(this.cursorY * (this.viewportY - 1));
 			
-			BRDFFragment current = this.renderFragments[x][y];
+			current = this.renderFragments[x][y];
+		}
 			
-			BRDFVector3d colorSample = new BRDFVector3d();
+		// Select color sample.
+		BRDFVector3d colorSample = null;
+		if(current != null && !current.discarded){
+			colorSample = new BRDFVector3d();
 			host.getData().fetch(current.thetaHalf, 
 					current.thetaDiff, current.phiDiff, colorSample);
-			colorSampler.setColorSample(colorSample);
+		}
+		colorSampler.setColorSample(colorSample);
+		
+		// Select theta sample.
+		if(current != null && !current.discarded) {
+			thetaHalfField.setValue(current.thetaHalf);
+			thetaDiffField.setValue(current.thetaDiff);
+			phiDiffField.setValue(current.phiDiff);
+		}
+		else {
+			thetaHalfField.setValue(Double.NaN);
+			thetaDiffField.setValue(Double.NaN);
+			phiDiffField.setValue(Double.NaN);
 		}
 	}
 	

@@ -140,7 +140,7 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 		
 		BRDFViewer brdfViewer = new BRDFViewer("BRDF Viewer");
 		brdfViewer.setLocationRelativeTo(null);
-		brdfViewer.setSize(new Dimension(830, 500));
+		brdfViewer.setSize(new Dimension(830, 730));
 		brdfViewer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		brdfViewer.setVisible(true);

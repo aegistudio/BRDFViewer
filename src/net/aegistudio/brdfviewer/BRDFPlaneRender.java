@@ -58,7 +58,7 @@ public class BRDFPlaneRender implements BRDFRender {
 					projHalfY.normalize();
 					
 					if(symmetricPhi) current.phiDiff = Math.acos(Math.min(
-							Math.max(projHalfX.dot(projLight), 0.0), 1.0));
+							Math.max(projHalfX.dot(projLight), -1.0), 1.0));
 					else current.phiDiff = Math.atan2(
 							projHalfY.dot(projLight), projHalfX.dot(projLight));
 					
