@@ -49,7 +49,15 @@ public class BRDFSlice extends JPanel implements BRDFPerspective {
 		public void paint(Graphics g) {
 			g.setColor(Color.BLACK);
 			g.fillRect(0, 0, getWidth(), getHeight());
+		
+			// Render the click instruction legend.
+			g.setColor(Color.green);
+			int instructionHeight = (int)g.getFontMetrics()
+					.getStringBounds("PLACEHOLDER", g).getHeight();
+			g.drawString("Left Click: Query information at point", 
+					5, getHeight() - 1 * instructionHeight);
 			
+			// Render the BRDF's image slice.
 			if(host.getData() != null) {
 				// Render slice data.
 				BRDFVector3d colorTuple = new BRDFVector3d();

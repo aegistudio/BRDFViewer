@@ -10,10 +10,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 
 import net.aegistudio.brdfviewer.BRDFRender.BRDFFragment;
@@ -31,10 +33,21 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 	
 	private static final Dimension INFOTAG_SIZE = new Dimension(80, 25);
 	private static final Dimension INPUT_SIZE = new Dimension(120, 25);
-	private static final Dimension CHECKBOX_SIZE = new Dimension(130, 25);
+	private static final Dimension CHECKBOX_SIZE = new Dimension(180, 25);
 	private JCheckBox renderLegends = new JCheckBox("Render legends");
 	private JCheckBox symmetricPhiDiff = new JCheckBox(
 			"<html>Symmetric <i>\u03d5</i><sub>d</sub></html>");
+	
+	private final JRadioButton renderModeAlbedo = new JRadioButton(
+			"<html>Render albedo \u03c1<sub>Channel</sub></html>");
+	private final JRadioButton renderModeThetaHalf = new JRadioButton(
+			"<html>Render half-zenith <i>\u03b8</i><sub>h</sub></html>");
+	private final JRadioButton renderModeThetaDiff = new JRadioButton(
+			"<html>Render diff-zenith <i>\u03b8</i><sub>d</sub></html>");
+	private final JRadioButton renderModePhiDiff = new JRadioButton(
+			"<html>Render diff-azimuth <i>\u03d5</i><sub>d</sub></html>");
+	private final JRadioButton renderModeSampler = new JRadioButton(
+			"<html>Render Sampler tuple</html>");
 	
 	private final JComponent brdfComponent = new JComponent() {
 		private static final long serialVersionUID = 1L;
@@ -66,6 +79,17 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 		@Override
 		public void paint(Graphics g) {
 			g.fillRect(0, 0, getWidth(), getHeight());
+			
+			// Render the operate instruction legend.
+			g.setColor(Color.green);
+			int instructionHeight = (int)g.getFontMetrics()
+					.getStringBounds("PLACEHOLDER", g).getHeight();
+			g.drawString("Left Click: Query information at point", 
+					5, getHeight() - 2 * instructionHeight);
+			g.drawString("Right Click: Set light's coordinate to point", 
+					5, getHeight() - 1 * instructionHeight);
+			
+			// Begin the real rendering.
 			if(host == null) return;
 			if(host.getData() == null) return;
 			
@@ -100,11 +124,32 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 					BRDFVector3d colorTuple = new BRDFVector3d();
 					for(int i = 0; i < viewportX; ++ i) {
 						for(int j = 0; j < viewportY; ++ j) {
-							if(!renderFragments[i][j].discarded) {
-								host.getData().fetch(
-									renderFragments[i][j].thetaHalf,
-									renderFragments[i][j].thetaDiff,
-									renderFragments[i][j].phiDiff, colorTuple);
+							BRDFFragment renderFragment = renderFragments[i][j];
+							if(!renderFragment.discarded) {
+								
+								if(renderModeAlbedo.isSelected()) {
+									host.getData().fetch(
+										renderFragment.thetaHalf,
+										renderFragment.thetaDiff,
+										renderFragment.phiDiff, colorTuple);
+								}
+								else if(renderModeThetaHalf.isSelected()) {
+									colorTuple.x = colorTuple.y = colorTuple.z = Math.sqrt(
+											renderFragment.thetaHalf / (Math.PI * 0.5));
+								}
+								else if(renderModeThetaDiff.isSelected()) {
+									colorTuple.x = colorTuple.y = colorTuple.z
+											= renderFragment.thetaDiff / (Math.PI * 0.5);
+								}
+								else if(renderModePhiDiff.isSelected()) {
+									colorTuple.x = colorTuple.y = colorTuple.z
+											= renderFragment.phiDiff / Math.PI;
+								}
+								else if(renderModeSampler.isSelected()) {
+									colorTuple.x = Math.sqrt(renderFragment.thetaHalf / (Math.PI * 0.5));
+									colorTuple.y = renderFragment.thetaDiff / (Math.PI * 0.5);
+									colorTuple.z = renderFragment.phiDiff / Math.PI;
+								}
 								
 								colorTuple.clamp();
 								renderImage.setRGB(i, j, colorTuple.asRGB());
@@ -119,7 +164,7 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 			}
 			
 			if(renderImage != null) g.drawImage(renderImage, 0, 0, null);
-
+			
 			if(!renderLegends.isSelected()) return;
 			
 			// Render the origin lengend.
@@ -186,7 +231,6 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 					cursorCenterX + 0, cursorCenterY + cursorFar);
 			g.drawLine(cursorCenterX + 0, cursorCenterY - cursorNear, 
 					cursorCenterX + 0, cursorCenterY - cursorFar);
-			
 		}
 		
 		private void handleMouse(MouseEvent me) {
@@ -244,7 +288,7 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 		// The panel contains the information output and hint inputs.
 		JPanel informationPanel = new JPanel();
 		informationPanel.setPreferredSize(
-				new Dimension(220, 360));
+				new Dimension(220, 500));
 		FlowLayout informationLayout = new FlowLayout();
 		informationLayout.setVgap(0);
 		informationPanel.setLayout(informationLayout);
@@ -296,11 +340,50 @@ public class BRDFRenderer extends JPanel implements BRDFPerspective {
 		renderLegends.setPreferredSize(CHECKBOX_SIZE);
 		informationPanel.add(renderLegends);
 		
+		// Insert the symmetric phi-diff option.
 		symmetricPhiDiff.setHorizontalTextPosition(JCheckBox.RIGHT);
 		symmetricPhiDiff.setSelected(false);
 		symmetricPhiDiff.setPreferredSize(CHECKBOX_SIZE);
 		symmetricPhiDiff.addActionListener(a -> forceUpdate());
 		informationPanel.add(symmetricPhiDiff);
+		
+		// Insert the render output options.
+		ButtonGroup renderMode = new ButtonGroup();
+		
+		renderModeAlbedo.setHorizontalTextPosition(JRadioButton.RIGHT);
+		renderModeAlbedo.setSelected(true);
+		renderModeAlbedo.setPreferredSize(CHECKBOX_SIZE);
+		renderModeAlbedo.addActionListener(a -> forceUpdate());
+		informationPanel.add(renderModeAlbedo);
+		renderMode.add(renderModeAlbedo);
+		
+		renderModeThetaHalf.setHorizontalTextPosition(JRadioButton.RIGHT);
+		renderModeThetaHalf.setSelected(true);
+		renderModeThetaHalf.setPreferredSize(CHECKBOX_SIZE);
+		renderModeThetaHalf.addActionListener(a -> forceUpdate());
+		informationPanel.add(renderModeThetaHalf);
+		renderMode.add(renderModeThetaHalf);
+		
+		renderModeThetaDiff.setHorizontalTextPosition(JRadioButton.RIGHT);
+		renderModeThetaDiff.setSelected(true);
+		renderModeThetaDiff.setPreferredSize(CHECKBOX_SIZE);
+		renderModeThetaDiff.addActionListener(a -> forceUpdate());
+		informationPanel.add(renderModeThetaDiff);
+		renderMode.add(renderModeThetaDiff);
+		
+		renderModePhiDiff.setHorizontalTextPosition(JRadioButton.RIGHT);
+		renderModePhiDiff.setSelected(true);
+		renderModePhiDiff.setPreferredSize(CHECKBOX_SIZE);
+		renderModePhiDiff.addActionListener(a -> forceUpdate());
+		informationPanel.add(renderModePhiDiff);
+		renderMode.add(renderModePhiDiff);
+		
+		renderModeSampler.setHorizontalTextPosition(JRadioButton.RIGHT);
+		renderModeSampler.setSelected(true);
+		renderModeSampler.setPreferredSize(CHECKBOX_SIZE);
+		renderModeSampler.addActionListener(a -> forceUpdate());
+		informationPanel.add(renderModeSampler);
+		renderMode.add(renderModeSampler);
 		
 		informationUpdate();
 	}
