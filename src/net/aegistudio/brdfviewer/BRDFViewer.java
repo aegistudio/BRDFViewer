@@ -79,13 +79,12 @@ public class BRDFViewer extends JFrame implements BRDFHost {
 				@Override
 				public boolean accept(File f) {
 					return f.isDirectory() 
-						|| f.getName().endsWith(".binary")
-						|| f.getName().endsWith(".binary.ioc");
+						|| f.getName().endsWith(".binary");
 				}
 
 				@Override
 				public String getDescription() {
-					return "MERL-BRDF file (*.binary; *.binary.ioc)";
+					return "MERL-BRDF file (*.binary)";
 				}
 			});
 			
